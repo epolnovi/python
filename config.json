@@ -1,0 +1,46 @@
+{
+	"mysetup": {
+		"testenv": {
+			"name": "testcluster",
+			"administrator": "root@testcluster",
+			"vipaddress": "10.1.1.130",
+			"vipfqdn": "testcluster.mormelnet",
+			"nodes": {
+				"node1": {
+					"ipaddress": "10.1.1.131",
+					"fqdn": "node1.mormelnet",
+					"sshkey": "",
+					"sshuser": ""
+				},
+				"node2": {
+					"ipaddress": "10.1.1.132",
+					"fqdn": "node2.mormelnet",
+					"sshkey": "",
+					"sshuser": ""
+				}
+			}
+
+		},
+		"prodenv": {
+			"name": "prodcluster",
+			"administrator": "root@testcluster",
+			"vipaddress": "10.1.1.133",
+			"vipfqdn": "prodcluster.mormelnet",
+			"nodes": {
+				"node3": {
+					"ipaddress": "10.1.1.134",
+					"fqdn": "node3.mormelnet",
+					"sshkey": "",
+					"sshuser": ""
+
+				},
+				"node4": {
+					"ipaddress": "10.1.1.135",
+					"fqdn": "node4.mormelnet",
+					"sshkey": "",
+					"sshuser": ""
+				}
+			}
+		}
+	}
+}
