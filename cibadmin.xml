@@ -1,0 +1,93 @@
+<cib crm_feature_set="3.3.0" validate-with="pacemaker-3.2" epoch="16" num_updates="29" admin_epoch="0" cib-last-written="Wed Oct 21 00:09:17 2020" update-origin="node1" update-client="crm_resource" update-user="root" have-quorum="1" dc-uuid="1">
+  <configuration>
+    <crm_config>
+      <cluster_property_set id="cib-bootstrap-options">
+        <nvpair id="cib-bootstrap-options-have-watchdog" name="have-watchdog" value="false"/>
+        <nvpair id="cib-bootstrap-options-dc-version" name="dc-version" value="2.0.3-5.el8_2.1-4b1f869f0f"/>
+        <nvpair id="cib-bootstrap-options-cluster-infrastructure" name="cluster-infrastructure" value="corosync"/>
+        <nvpair id="cib-bootstrap-options-cluster-name" name="cluster-name" value="mormelcluster"/>
+        <nvpair id="cib-bootstrap-options-last-lrm-refresh" name="last-lrm-refresh" value="1603231433"/>
+      </cluster_property_set>
+    </crm_config>
+    <nodes>
+      <node id="1" uname="node1"/>
+      <node id="2" uname="node2"/>
+    </nodes>
+    <resources>
+      <group id="mormelcluster">
+        <primitive class="ocf" id="fs" provider="heartbeat" type="Filesystem">
+          <instance_attributes id="fs-instance_attributes">
+            <nvpair id="fs-instance_attributes-device" name="device" value="/dev/mapper/clusterdisk-clustervolume"/>
+            <nvpair id="fs-instance_attributes-directory" name="directory" value="/cluster"/>
+            <nvpair id="fs-instance_attributes-fstype" name="fstype" value="xfs"/>
+          </instance_attributes>
+          <operations>
+            <op id="fs-monitor-interval-20s" interval="20s" name="monitor" timeout="40s"/>
+            <op id="fs-start-interval-0s" interval="0s" name="start" timeout="60s"/>
+            <op id="fs-stop-interval-0s" interval="0s" name="stop" timeout="60s"/>
+          </operations>
+        </primitive>
+        <primitive class="ocf" id="VIP" provider="heartbeat" type="IPaddr2">
+          <instance_attributes id="VIP-instance_attributes">
+            <nvpair id="VIP-instance_attributes-cidr_netmask" name="cidr_netmask" value="24"/>
+            <nvpair id="VIP-instance_attributes-ip" name="ip" value="10.1.1.130"/>
+          </instance_attributes>
+          <operations>
+            <op id="VIP-monitor-interval-10s" interval="10s" name="monitor" timeout="20s"/>
+            <op id="VIP-start-interval-0s" interval="0s" name="start" timeout="20s"/>
+            <op id="VIP-stop-interval-0s" interval="0s" name="stop" timeout="20s"/>
+          </operations>
+        </primitive>
+      </group>
+      <primitive class="stonith" id="vmfence" type="fence_vmware_soap">
+        <instance_attributes id="vmfence-instance_attributes">
+          <nvpair id="vmfence-instance_attributes-ip" name="ip" value="10.1.1.128"/>
+          <nvpair id="vmfence-instance_attributes-password" name="password" value="hekjeszetter8250!"/>
+          <nvpair id="vmfence-instance_attributes-ssl_insecure" name="ssl_insecure" value="1"/>
+          <nvpair id="vmfence-instance_attributes-username" name="username" value="fence"/>
+        </instance_attributes>
+        <operations>
+          <op id="vmfence-monitor-interval-60s" interval="60s" name="monitor"/>
+        </operations>
+      </primitive>
+    </resources>
+    <constraints>
+      <rsc_location id="cli-ban-mormelcluster-on-node1" rsc="mormelcluster" role="Started" node="node1" score="-INFINITY"/>
+    </constraints>
+  </configuration>
+  <status>
+    <node_state id="1" uname="node1" in_ccm="true" crmd="online" crm-debug-origin="do_update_resource" join="member" expected="member">
+      <lrm id="1">
+        <lrm_resources>
+          <lrm_resource id="fs" type="Filesystem" class="ocf" provider="heartbeat">
+            <lrm_rsc_op id="fs_last_0" operation_key="fs_monitor_0" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="1:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:7;1:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node1" call-id="5" rc-code="7" op-status="0" interval="0" last-rc-change="1603555736" last-run="1603555736" exec-time="173" queue-time="0" op-digest="cf05be8106e5197dc49dc83b577fab16"/>
+          </lrm_resource>
+          <lrm_resource id="VIP" type="IPaddr2" class="ocf" provider="heartbeat">
+            <lrm_rsc_op id="VIP_last_0" operation_key="VIP_monitor_0" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="2:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:7;2:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node1" call-id="9" rc-code="7" op-status="0" interval="0" last-rc-change="1603555736" last-run="1603555736" exec-time="356" queue-time="0" op-digest="5891093e559f75b7420e4827bbcbc28d"/>
+          </lrm_resource>
+          <lrm_resource id="vmfence" type="fence_vmware_soap" class="stonith">
+            <lrm_rsc_op id="vmfence_last_0" operation_key="vmfence_start_0" operation="start" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="15:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;15:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node1" call-id="14" rc-code="0" op-status="0" interval="0" last-rc-change="1603555741" last-run="1603555741" exec-time="8526" queue-time="0" op-digest="d55bbe55bef2aadc68a2f7b89ed20d5a" op-secure-params=" password  passwd " op-secure-digest="73a053655199192fca14133111ace843"/>
+            <lrm_rsc_op id="vmfence_monitor_60000" operation_key="vmfence_monitor_60000" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="16:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;16:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node1" call-id="15" rc-code="0" op-status="0" interval="60000" last-rc-change="1603555750" exec-time="7210" queue-time="0" op-digest="72093f92c0aedd73c6049d6c7f97d06c" op-secure-params=" password  passwd " op-secure-digest="73a053655199192fca14133111ace843"/>
+          </lrm_resource>
+        </lrm_resources>
+      </lrm>
+    </node_state>
+    <node_state id="2" uname="node2" in_ccm="true" crmd="online" crm-debug-origin="do_update_resource" join="member" expected="member">
+      <lrm id="2">
+        <lrm_resources>
+          <lrm_resource id="fs" type="Filesystem" class="ocf" provider="heartbeat">
+            <lrm_rsc_op id="fs_last_0" operation_key="fs_start_0" operation="start" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="7:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;7:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node2" call-id="14" rc-code="0" op-status="0" interval="0" last-rc-change="1603555741" last-run="1603555741" exec-time="2678" queue-time="0" op-digest="cf05be8106e5197dc49dc83b577fab16"/>
+            <lrm_rsc_op id="fs_monitor_20000" operation_key="fs_monitor_20000" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="8:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;8:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node2" call-id="15" rc-code="0" op-status="0" interval="20000" last-rc-change="1603555744" exec-time="77" queue-time="0" op-digest="003574a543671ef8b731c727311f1b81"/>
+          </lrm_resource>
+          <lrm_resource id="VIP" type="IPaddr2" class="ocf" provider="heartbeat">
+            <lrm_rsc_op id="VIP_last_0" operation_key="VIP_start_0" operation="start" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="9:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;9:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node2" call-id="16" rc-code="0" op-status="0" interval="0" last-rc-change="1603555744" last-run="1603555744" exec-time="143" queue-time="0" op-digest="5891093e559f75b7420e4827bbcbc28d"/>
+            <lrm_rsc_op id="VIP_monitor_10000" operation_key="VIP_monitor_10000" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="10:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:0;10:0:0:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node2" call-id="17" rc-code="0" op-status="0" interval="10000" last-rc-change="1603555744" exec-time="87" queue-time="0" op-digest="c027d6ea2dc54076a59b8da66a2a1ad0"/>
+          </lrm_resource>
+          <lrm_resource id="vmfence" type="fence_vmware_soap" class="stonith">
+            <lrm_rsc_op id="vmfence_last_0" operation_key="vmfence_monitor_0" operation="monitor" crm-debug-origin="do_update_resource" crm_feature_set="3.3.0" transition-key="6:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" transition-magic="0:7;6:0:7:e5dbc5c2-caf7-4261-ab72-ecaf7dc508db" exit-reason="" on_node="node2" call-id="13" rc-code="7" op-status="0" interval="0" last-rc-change="1603555741" last-run="1603555741" exec-time="6" queue-time="0" op-digest="d55bbe55bef2aadc68a2f7b89ed20d5a" op-secure-params=" password  passwd " op-secure-digest="73a053655199192fca14133111ace843"/>
+          </lrm_resource>
+        </lrm_resources>
+      </lrm>
+    </node_state>
+  </status>
+</cib>

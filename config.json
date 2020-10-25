@@ -23,7 +23,7 @@
 		},
 		"prodenv": {
 			"name": "prodcluster",
-			"administrator": "root@testcluster",
+			"administrator": "root@prodcluster",
 			"vipaddress": "10.1.1.133",
 			"vipfqdn": "prodcluster.mormelnet",
 			"nodes": {

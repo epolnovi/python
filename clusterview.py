@@ -34,14 +34,22 @@ except OSError as e:
 
 # build objects from json config
 
-for cluster_site, cluster_environment in cluster_config.items():
-    cluster=cluster_environment
-    for c,d in cluster.items():
-        print ("site:"+cluster_site)
-        print ('environment:'+str(cluster))
-        print ('c'+c)
-        print ('d'+ str(d))
-
-
-
-
+for k,v in cluster_config.items():
+    cluster_site=k
+    cluster_environment=v
+    for k,v in cluster_environment.items():
+        cluster=k
+        cluster_properties=v
+        cluster_name=cluster_properties["name"]
+        cluster_administrator=cluster_properties["name"]
+        cluster_vipaddress=cluster_properties["vipaddress"]
+        cluster_vipfqdn=cluster_properties["vipfqdn"]
+        cluster_nodes=cluster_properties["nodes"]
+        for k,v in cluster_nodes.items():
+            node_name=k
+            node_properties=v
+            node_ipaddress=node_properties["ipaddress"]
+            node_fqdn=node_properties["fqdn"]
+            node_sshkey=node_properties["sshkey"]
+            node_sshuser=node_properties["sshuser"]
+            print (cluster_site, cluster_vipaddress,node_ipaddress,node_fqdn)
