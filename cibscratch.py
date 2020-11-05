@@ -24,7 +24,42 @@
 #     print(cluster_name)
 
 import xml2dict
+import xmltodict
 
-cib=xml2dict.parse("cibadmin.xml")
 
+with open('cibadmin.xml','r') as file:
+    cib_file = file.read()
+#print(cib_file)
+
+cib= xmltodict.parse(cib_file)
 print(cib)
+
+# cib=xml2dict.parse(cib_file,schema)
+#
+# #print(cib)
+#
+# for k,v in cib.items():
+#     cib=k
+#     xml_cib_sections=v
+#     cib_last_written=xml_cib_sections['@cib-last-written']
+#     for k,v in xml_cib_sections.items():
+#         if (k=="configuration"):
+#             configuration=k
+#             xml_configuration_sections=v
+#             for k,v in xml_configuration_sections.items():
+#  #               print (k,v)
+#                 if (k=="crm_config"):
+#                     crm_config=k
+#                     xml_cluster_property_set=v
+#                     for k,v in xml_cluster_property_set.items():
+#                         nvpair=k
+#                         xml_config_item=v
+#                         print (v)
+#
+# #                    print (xml_cluster_property_set)
+# #                    cluster_name=xml_cluster_property_set['@name']
+#         elif (k=="status"):
+#             status=k
+# #            print (k,v)
+#
+# print ("CIB last written: " + cib_last_written)
