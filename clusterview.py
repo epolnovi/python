@@ -2,6 +2,10 @@ import datetime
 import json
 import sys
 import pssh
+import random
+from pssh.clients import SSHClient
+
+# json made with https://jsoneditoronline.org/
 
 configfile="config.json"
 logfile="clusterview.log"
@@ -14,10 +18,23 @@ class Site:
 
 class Cluster:
 
-    def __init__(self,cluster_name,administrator,designated_coordinator, nodes, cib=""):
+    def __init__(self,
+                 cluster_name,
+                 administrator,
+                 designated_coordinator="unknown",
+                 ssh_keyfile,
+                 ssh_user,
+                 ssh_passwdfile,
+                 ssh_port,
+                 nodes="",
+                 cib=""):
         self.cluster_name=cluster_name
         self.administrator=administrator
         self.designated_coordinator=designated_coordinator
+        self.ssh_keyfile=ssh_keyfile
+        self.ssh_user=ssh_user
+        self.ssh_passwdfile=ssh_passwdfile
+        self.ssh_port=ssh_port
         self.nodes=nodes
         self.cib=cib
 
@@ -28,50 +45,6 @@ class Cluster:
         @cib.setter
         def cib (self, cib_value):
             self.cib=cib_value
-
-        def update_cib(self):
-            self.cib=
-
-            pass
-
-
-
-
-class Node:
-
-    def __init__(self, node_name, node_ipaddress, node_fqdn, ssh_keyfile,ssh_user,ssh_passwdfile,ssh_port, node_status="unknown"):
-        self.node_name=node_name
-        self.node_ipaddress=node_ipaddress
-        self.node_fqdn=node_fqdn
-        self.ssh_keyfile=ssh_keyfile
-        self.ssh_user=ssh_user
-        self.ssh_passwdfile=ssh_passwdfile
-        self.ssh_port=ssh_port
-        self.node_status=node_status
-
-        @property
-        def node_name(self):
-            return self.__node_name
-
-        @node_name.setter
-        def node_name (self, node_name_value):
-            self.node_name=node_name_value
-
-        @property
-        def node_ipaddress(self):
-            return self.__node_ipaddress
-
-        @node_ipaddress.setter
-        def node_ipaddress (self, node_ipaddress_value):
-            self.node_name=node_ipaddress_value
-
-        @property
-        def node_fqdn(self):
-            return self.__node_fqdn
-
-        @node_fqdn.setter
-        def node_fqdn (self, node_fqdn_value):
-            self.node_fqdn=node_fqdn_value
 
         @property
         def ssh_keyfile(self):
@@ -104,6 +77,63 @@ class Node:
         @ssh_port.setter
         def ssh_port(self, ssh_port_value):
             self.ssh_port=self.sshport_value
+
+
+        # update cluster cib. If DC is unknown, make a random host DC as bootstrap until crm_mon output catches up
+
+    def update_cib(self):
+
+        if (self.designated_coordinator=="unknown"):
+            dc_node_list =[]
+            for dc_ip in self.nodes:
+                dc_node_list.append(dc_ip.node_ipaddress)
+                self.designated_coordinator=random.choice(dc_node_list)
+
+        cluster_cib=SSHClient(self.designated_coordinator,s)
+
+
+
+        pass
+
+
+
+
+class Node:
+
+    def __init__(self,
+                 node_name,
+                 node_ipaddress,
+                 node_fqdn,
+                 node_status="unknown"):
+        self.node_name=node_name
+        self.node_ipaddress=node_ipaddress
+        self.node_fqdn=node_fqdn
+        self.node_status=node_status
+
+        @property
+        def node_name(self):
+            return self.__node_name
+
+        @node_name.setter
+        def node_name (self, node_name_value):
+            self.node_name=node_name_value
+
+        @property
+        def node_ipaddress(self):
+            return self.__node_ipaddress
+
+        @node_ipaddress.setter
+        def node_ipaddress (self, node_ipaddress_value):
+            self.node_name=node_ipaddress_value
+
+        @property
+        def node_fqdn(self):
+            return self.__node_fqdn
+
+        @node_fqdn.setter
+        def node_fqdn (self, node_fqdn_value):
+            self.node_fqdn=node_fqdn_value
+
 
         @property
         def node_status(self):
@@ -159,19 +189,16 @@ for site in cluster_config['sites']:
             nodelist.append(Node(
                 node_name=node['nodename'],
                 node_ipaddress=node['ipaddress'],
-                node_fqdn=node['fqdn'],
-                ssh_keyfile=node['ssh_keyfile'],
-                ssh_user=node['ssh_user'],
-                ssh_passwdfile=node['ssh_passwdfile'],
-                ssh_port=node['ssh_port']
+                node_fqdn=node['fqdn']
             ))
-
-
 
         clusterlist.append(Cluster(
             cluster_name=cluster['clustername'],
             administrator=cluster['administrator'],
-            designated_coordinator=cluster['dc'],
+            ssh_keyfile=node['ssh_keyfile'],
+            ssh_user=node['ssh_user'],
+            ssh_passwdfile=node['ssh_passwdfile'],
+            ssh_port=node['ssh_port'],
             nodes=nodelist
         ))
 
@@ -182,4 +209,4 @@ for site in cluster_config['sites']:
 
 for site in sitelist:
     for cluster in site.clusters:
-        print(cluster.designated_coordinator)
+        cluster.update_cib()

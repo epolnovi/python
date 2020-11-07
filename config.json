@@ -9,50 +9,40 @@
         {
           "clustername": "testcluster",
           "administrator": "root@testcluster",
-          "dc": "10.1.1.132",
+          "ssh_keyfile": "",
+          "ssh_user": "",
+          "ssh_passwdfile": "",
+          "ssh_port": "21",
           "nodes": [
             {
               "nodename": "node1",
               "ipaddress": "10.1.1.131",
-              "fqdn": "node1.mormelnet",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node1.mormelnet"
             },
             {
               "nodename": "node2",
               "ipaddress": "10.1.1.132",
-              "fqdn": "node2.mormelnet",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node2.mormelnet"
             }
           ]
         },
         {
           "clustername": "prodcluster",
           "administrator": "root@prodcluster",
-          "dc": "10.1.1.140",
+          "ssh_keyfile": "",
+          "ssh_user": "",
+          "ssh_passwdfile": "",
+          "ssh_port": "21",
           "nodes": [
             {
               "nodename": "node3",
               "ipaddress": "10.1.1.141",
-              "fqdn": "node3.mormelnet",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node3.mormelnet"
             },
             {
               "nodename": "node4",
               "ipaddress": "10.1.1.142",
-              "fqdn": "node4.mormelnet",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node4.mormelnet"
             }
           ]
         }
@@ -64,25 +54,20 @@
         {
           "clustername": "Azureprodcluster",
           "administrator": "root@prodcluster",
-          "dc": "100.1.1.131",
+          "ssh_keyfile": "",
+          "ssh_user": "",
+          "ssh_passwdfile": "",
+          "ssh_port": "21",
           "nodes": [
             {
               "nodename": "node3",
               "ipaddress": "100.1.1.141",
-              "fqdn": "node5.azure",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node5.azure"
             },
             {
               "nodename": "node4",
               "ipaddress": "100.1.1.142",
-              "fqdn": "node6.azure",
-              "ssh_keyfile": "",
-              "ssh_user": "",
-              "ssh_passwdfile": "",
-              "ssh_port": "21"
+              "fqdn": "node6.azure"
             }
           ]
         }
