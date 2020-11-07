@@ -1,46 +1,92 @@
 {
-	"mysetup": {
-		"testenv": {
-			"name": "testcluster",
-			"administrator": "root@testcluster",
-			"vipaddress": "10.1.1.130",
-			"vipfqdn": "testcluster.mormelnet",
-			"nodes": {
-				"node1": {
-					"ipaddress": "10.1.1.131",
-					"fqdn": "node1.mormelnet",
-					"sshkey": "",
-					"sshuser": ""
-				},
-				"node2": {
-					"ipaddress": "10.1.1.132",
-					"fqdn": "node2.mormelnet",
-					"sshkey": "",
-					"sshuser": ""
-				}
-			}
-
-		},
-		"prodenv": {
-			"name": "prodcluster",
-			"administrator": "root@prodcluster",
-			"vipaddress": "10.1.1.133",
-			"vipfqdn": "prodcluster.mormelnet",
-			"nodes": {
-				"node3": {
-					"ipaddress": "10.1.1.134",
-					"fqdn": "node3.mormelnet",
-					"sshkey": "",
-					"sshuser": ""
-
-				},
-				"node4": {
-					"ipaddress": "10.1.1.135",
-					"fqdn": "node4.mormelnet",
-					"sshkey": "",
-					"sshuser": ""
-				}
-			}
-		}
-	}
+  "configuration": {
+    "global_private_key_file": "~/.ssh/id_rsa"
+  },
+  "sites": [
+    {
+      "sitename": "thuis",
+      "clusters": [
+        {
+          "clustername": "testcluster",
+          "administrator": "root@testcluster",
+          "dc": "10.1.1.132",
+          "nodes": [
+            {
+              "nodename": "node1",
+              "ipaddress": "10.1.1.131",
+              "fqdn": "node1.mormelnet",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            },
+            {
+              "nodename": "node2",
+              "ipaddress": "10.1.1.132",
+              "fqdn": "node2.mormelnet",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            }
+          ]
+        },
+        {
+          "clustername": "prodcluster",
+          "administrator": "root@prodcluster",
+          "dc": "10.1.1.140",
+          "nodes": [
+            {
+              "nodename": "node3",
+              "ipaddress": "10.1.1.141",
+              "fqdn": "node3.mormelnet",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            },
+            {
+              "nodename": "node4",
+              "ipaddress": "10.1.1.142",
+              "fqdn": "node4.mormelnet",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sitename": "Azure",
+      "clusters": [
+        {
+          "clustername": "Azureprodcluster",
+          "administrator": "root@prodcluster",
+          "dc": "100.1.1.131",
+          "nodes": [
+            {
+              "nodename": "node3",
+              "ipaddress": "100.1.1.141",
+              "fqdn": "node5.azure",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            },
+            {
+              "nodename": "node4",
+              "ipaddress": "100.1.1.142",
+              "fqdn": "node6.azure",
+              "ssh_keyfile": "",
+              "ssh_user": "",
+              "ssh_passwdfile": "",
+              "ssh_port": "21"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
