@@ -1,6 +1,9 @@
 {
   "configuration": {
-    "global_private_key_file": "~/.ssh/id_rsa"
+    "global_private_key_file": "privatekey",
+    "ssh_host_timeout": "2",
+    "ssh_host_retries": "3",
+    "global_interval_timer": "1"
   },
   "sites": [
     {
@@ -10,7 +13,7 @@
           "clustername": "testcluster",
           "administrator": "root@testcluster",
           "ssh_keyfile": "",
-          "ssh_user": "",
+          "ssh_user": "root",
           "ssh_passwdfile": "",
           "ssh_port": "21",
           "nodes": [

@@ -3,6 +3,7 @@ import json
 import sys
 import pssh
 import random
+import xmltodict
 from pssh.clients import SSHClient
 
 # json made with https://jsoneditoronline.org/
@@ -10,23 +11,109 @@ from pssh.clients import SSHClient
 configfile="config.json"
 logfile="clusterview.log"
 
+
+class Resource:
+    pass
+
+# Cib_load:
+
+class Cib_load:
+    def __init__(self, configuration_file):
+        self.configuration_file=configuration_file
+
+        @property
+        def configuration_file(self):
+            return __configuration_file
+
+        @configuration_file.setter
+        def configuration_file(self, configuration_file_value):
+            self.configuration_file=configuration_file_value
+
+        try:
+            with open(configuration_file, encoding='utf-8') as config_json:
+                cluster_config = json.load(config_json)
+        except NameError:
+            log_output('Can not parse json in ' + configuration_file)
+            sys.exit()
+        except OSError as e:
+            log_output(str(e))
+            sys.exit()
+
+        configuration = cluster_config['configuration']
+
+
+        privatekey = configuration['global_private_key_file']
+        ssh_host_timeout = configuration['ssh_host_timeout']
+        ssh_host_retries = configuration['ssh_host_retries']
+        global_interval_timer = configuration['global_interval_timer']
+
+        sites = cluster_config['sites']
+
+        sitelist = []
+
+        for site in cluster_config['sites']:
+
+            clusterlist = []
+
+            for cluster in site['clusters']:
+
+                nodelist = []
+
+                for node in cluster['nodes']:
+                    nodelist.append(Node(
+                        node_name=node['nodename'],
+                        node_ipaddress=node['ipaddress'],
+                        node_fqdn=node['fqdn']
+                    ))
+
+                clusterlist.append(Cluster(
+                    cluster_name=cluster['clustername'],
+                    administrator=cluster['administrator'],
+                    ssh_keyfile=cluster['ssh_keyfile'],
+                    ssh_user=cluster['ssh_user'],
+                    ssh_passwdfile=cluster['ssh_passwdfile'],
+                    ssh_port=cluster['ssh_port'],
+                    nodes=nodelist
+                ))
+
+            sitelist.append(Site(
+                sitename=site['sitename'],
+                clusters=clusterlist
+            ))
+
+        for site in sitelist:
+            for cluster in site.clusters:
+                cluster.update_cib()
+
+
+
+class Fence_device:
+    pass
+
+class Resourcegroup:
+    pass
+
 class Site:
 
     def __init__(self,sitename,clusters):
         self.sitename=sitename
         self.clusters=clusters
 
-class Cluster:
+
+# Cluster Information Base
+
+class CIB:
 
     def __init__(self,
                  cluster_name,
                  administrator,
-                 designated_coordinator="unknown",
                  ssh_keyfile,
                  ssh_user,
                  ssh_passwdfile,
                  ssh_port,
+                 designated_coordinator="unknown",
                  nodes="",
+                 cibxml="",
                  cib=""):
         self.cluster_name=cluster_name
         self.administrator=administrator
@@ -36,7 +123,17 @@ class Cluster:
         self.ssh_passwdfile=ssh_passwdfile
         self.ssh_port=ssh_port
         self.nodes=nodes
+        self.cibxml=cibxml
         self.cib=cib
+
+        @property
+        def cibxml(self):
+            return self.__cibxml
+
+        @cibxml.setter
+        def cibxml (self, cibxml_value):
+            prin("lalala")
+            self.cibxml=cibxml_value
 
         @property
         def cib(self):
@@ -88,11 +185,27 @@ class Cluster:
             for dc_ip in self.nodes:
                 dc_node_list.append(dc_ip.node_ipaddress)
                 self.designated_coordinator=random.choice(dc_node_list)
+            try:
+                ssh_client = SSHClient(self.designated_coordinator,
+                                       user=self.ssh_user,
+                                       pkey=privatekey,
+                                       timeout=ssh_host_timeout,
+                                       num_retries=ssh_host_retries)
+                node_ssh_output=ssh_client.run_command('cat /var/lib/pacemaker/cib/cib.xml')
 
-        cluster_cib=SSHClient(self.designated_coordinator,s)
+                for line in node_ssh_output.stdout:
+                    self.cibxml=self.cibxml+line + '\n'
 
+                try:
+                    self.cib= xmltodict.parse(self.cibxml)
+                    print(self.cib)
 
+                except:
+                    log_output("Can not parse XML CIB from"+self.designated_coordinator)
 
+            except:
+                log_output("Can not download CIB.xml from "+self.designated_coordinator)
+                self.designated_coordinator="unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
         pass
 
 
@@ -192,13 +305,13 @@ for site in cluster_config['sites']:
                 node_fqdn=node['fqdn']
             ))
 
-        clusterlist.append(Cluster(
+        clusterlist.append(CIB(
             cluster_name=cluster['clustername'],
             administrator=cluster['administrator'],
-            ssh_keyfile=node['ssh_keyfile'],
-            ssh_user=node['ssh_user'],
-            ssh_passwdfile=node['ssh_passwdfile'],
-            ssh_port=node['ssh_port'],
+            ssh_keyfile=cluster['ssh_keyfile'],
+            ssh_user=cluster['ssh_user'],
+            ssh_passwdfile=cluster['ssh_passwdfile'],
+            ssh_port=cluster['ssh_port'],
             nodes=nodelist
         ))
 
