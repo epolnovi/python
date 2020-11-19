@@ -1,7 +1,6 @@
 import datetime
 import json
 import sys
-import pssh
 import random
 import xmltodict
 from pssh.clients import SSHClient
@@ -10,82 +9,23 @@ from pssh.clients import SSHClient
 
 configfile="config.json"
 logfile="clusterview.log"
+privatekey="id_rsa"  # declare variable now, but will be overwritten from config.json
+ssh_host_timeout=1
+ssh_host_retries=1
+
+class Primitive:
+  #    def __init__(self, resource_agent):
+    pass
 
 
 class Resource:
+    def __init__(self,resource_name, resource_agent, resource_status="", resource_location=""):
+        self.resource_name=resource_name
+        self.resource_agent=resource_agent
+        self.resource_location=resource_location
+        self.resource_status=resource_status
+
     pass
-
-# Cib_load:
-
-class Cib_load:
-    def __init__(self, configuration_file):
-        self.configuration_file=configuration_file
-
-        @property
-        def configuration_file(self):
-            return __configuration_file
-
-        @configuration_file.setter
-        def configuration_file(self, configuration_file_value):
-            self.configuration_file=configuration_file_value
-
-        try:
-            with open(configuration_file, encoding='utf-8') as config_json:
-                cluster_config = json.load(config_json)
-        except NameError:
-            log_output('Can not parse json in ' + configuration_file)
-            sys.exit()
-        except OSError as e:
-            log_output(str(e))
-            sys.exit()
-
-        configuration = cluster_config['configuration']
-
-
-        privatekey = configuration['global_private_key_file']
-        ssh_host_timeout = configuration['ssh_host_timeout']
-        ssh_host_retries = configuration['ssh_host_retries']
-        global_interval_timer = configuration['global_interval_timer']
-
-        sites = cluster_config['sites']
-
-        sitelist = []
-
-        for site in cluster_config['sites']:
-
-            clusterlist = []
-
-            for cluster in site['clusters']:
-
-                nodelist = []
-
-                for node in cluster['nodes']:
-                    nodelist.append(Node(
-                        node_name=node['nodename'],
-                        node_ipaddress=node['ipaddress'],
-                        node_fqdn=node['fqdn']
-                    ))
-
-                clusterlist.append(Cluster(
-                    cluster_name=cluster['clustername'],
-                    administrator=cluster['administrator'],
-                    ssh_keyfile=cluster['ssh_keyfile'],
-                    ssh_user=cluster['ssh_user'],
-                    ssh_passwdfile=cluster['ssh_passwdfile'],
-                    ssh_port=cluster['ssh_port'],
-                    nodes=nodelist
-                ))
-
-            sitelist.append(Site(
-                sitename=site['sitename'],
-                clusters=clusterlist
-            ))
-
-        for site in sitelist:
-            for cluster in site.clusters:
-                cluster.update_cib()
-
-
 
 class Fence_device:
     pass
@@ -99,10 +39,20 @@ class Site:
         self.sitename=sitename
         self.clusters=clusters
 
+    def __str__(self):
+        return self.sitename
+
+        @property
+        def clusters(self):
+            return self.__clusters
+
+        @clusters.setter
+        def clusters (self, clusters_value):
+            self.clusters=clusters_value
 
 # Cluster Information Base
 
-class CIB:
+class Cluster:
 
     def __init__(self,
                  cluster_name,
@@ -114,7 +64,10 @@ class CIB:
                  designated_coordinator="unknown",
                  nodes="",
                  cibxml="",
-                 cib=""):
+                 cib="",
+                 crmxml="",
+                 crm="",
+                 cluster_status=""):
         self.cluster_name=cluster_name
         self.administrator=administrator
         self.designated_coordinator=designated_coordinator
@@ -125,6 +78,25 @@ class CIB:
         self.nodes=nodes
         self.cibxml=cibxml
         self.cib=cib
+        self.crmxml=crmxml
+        self.crm=crm
+        self.cluster_status=cluster_status
+
+
+
+        @property
+        def cluster_name(self):
+            return self.__cluster_name
+
+        @property
+        def designated_coordinator(self):
+            return self.__designated_coordinator
+
+        @designated_coordinator.setter
+        def designated_coordinator(self,designated_coordinator_value):
+            log_output("Setting designated coordinator of cluster {} to {}".format(self.cluster_name, designated_coordinator_value))
+            self.designated_coordinator=designated_coordinator_value
+
 
         @property
         def cibxml(self):
@@ -132,7 +104,6 @@ class CIB:
 
         @cibxml.setter
         def cibxml (self, cibxml_value):
-            prin("lalala")
             self.cibxml=cibxml_value
 
         @property
@@ -176,52 +147,69 @@ class CIB:
             self.ssh_port=self.sshport_value
 
 
-        # update cluster cib. If DC is unknown, make a random host DC as bootstrap until crm_mon output catches up
-
+    # update cluster cib. If DC is unknown, make a random host DC as bootstrap until crm_mon output catches up
     def update_cib(self):
 
         if (self.designated_coordinator=="unknown"):
             dc_node_list =[]
             for dc_ip in self.nodes:
                 dc_node_list.append(dc_ip.node_ipaddress)
-                self.designated_coordinator=random.choice(dc_node_list)
-            try:
-                ssh_client = SSHClient(self.designated_coordinator,
-                                       user=self.ssh_user,
-                                       pkey=privatekey,
-                                       timeout=ssh_host_timeout,
-                                       num_retries=ssh_host_retries)
-                node_ssh_output=ssh_client.run_command('cat /var/lib/pacemaker/cib/cib.xml')
-
-                for line in node_ssh_output.stdout:
-                    self.cibxml=self.cibxml+line + '\n'
-
-                try:
-                    self.cib= xmltodict.parse(self.cibxml)
-                    print(self.cib)
-
-                except:
-                    log_output("Can not parse XML CIB from"+self.designated_coordinator)
-
-            except:
-                log_output("Can not download CIB.xml from "+self.designated_coordinator)
-                self.designated_coordinator="unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
-        pass
-
-
-
-
+            self.designated_coordinator=random.choice(dc_node_list)
+        try:
+            log_output("Downloading CIB from {}".format(self.designated_coordinator))
+            ssh_client = SSHClient(self.designated_coordinator,
+                                   user=self.ssh_user,
+                                   pkey=self.ssh_keyfile,
+                                   timeout=1,
+                                   num_retries=1)
+            node_ssh_output=ssh_client.run_command('cat /var/lib/pacemaker/cib/cib.xml')
+            for line in node_ssh_output.stdout:
+                self.cibxml=self.cibxml+line + '\n'
+            self.cluster_status="Reachable"
+            self.cib= xmltodict.parse(self.cibxml)
+        except:
+            log_output("Can not download CIB.xml from "+self.designated_coordinator)
+            self.designated_coordinator="unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
+            self.cluster_status="Unreachable" # Consider whole cluster offline until the next random host answers.
+            return
+        return self.cib
+    def update_crm(self):
+        try:
+            ssh_client = SSHClient(self.designated_coordinator,
+                                   user=self.ssh_user,
+                                   pkey=self.ssh_keyfile,
+                                   timeout=2,
+                                   num_retries=2)
+            node_ssh_output = ssh_client.run_command('crm_mon --output-as=xml')
+            for line in node_ssh_output.stdout:
+                self.crmxml = self.crmxml + line + '\n'
+            for line in node_ssh_output.stderr:
+                log_output(line)
+            self.crm = xmltodict.parse(self.crmxml)
+        except Exception as e:
+            print(e)
+            log_output(str(e))
+            return e
+        return self.crm
+    def update_nodes(self, node_name,node_online_status,node_resources,node_id):
+        for node in self.nodes:
+            if (node.nodename==self.node_name):
+                node.node_online_status=node_online_status
+                node.node_resources=node_resources
+                node.node_id=node_id
 class Node:
-
     def __init__(self,
                  node_name,
                  node_ipaddress,
                  node_fqdn,
-                 node_status="unknown"):
+                 node_online_status="unknown",
+                 node_resources="",
+                 node_id=""):
         self.node_name=node_name
         self.node_ipaddress=node_ipaddress
         self.node_fqdn=node_fqdn
-        self.node_status=node_status
+        self.node_online_status=node_online_status
+        self.node_resources=node_resources
 
         @property
         def node_name(self):
@@ -247,7 +235,6 @@ class Node:
         def node_fqdn (self, node_fqdn_value):
             self.node_fqdn=node_fqdn_value
 
-
         @property
         def node_status(self):
             return self.__node_status
@@ -255,8 +242,6 @@ class Node:
         @node_status.setter
         def node_status(self, ssh_port_value):
             self.node_status=self.node_status
-#class Environment:
-#    def __init__(self, environment, cluster_name,administrator,vip_address,vip_fqdn,nodes):
 
 # Function to log messages to a logfile
 
@@ -270,56 +255,92 @@ def log_output(logstring):
         print('Can not write to logfile !')
         print(str(e))
 
-# import settings from config.json
+# get settings from config.json
 
-try:
-    with open(configfile, encoding='utf-8') as config_json:
-        cluster_config = json.load(config_json)
-except NameError:
-    log_output('Can not parse json in '+configfile)
-    sys.exit()
-except OSError as e:
-    log_output(str(e))
-    sys.exit()
+def load_config(configfile):
 
-configuration=cluster_config['configuration']
-privatekey=configuration['global_private_key_file']
+    try:
+        with open(configfile, encoding='utf-8') as config_json:
+            cluster_config = json.load(config_json)
+    except NameError:
+        log_output('Can not parse json in '+configfile)
+        sys.exit()
+    except OSError as e:
+        log_output(str(e))
+        sys.exit()
 
+    configuration=cluster_config['configuration']
+    privatekey=configuration['global_private_key_file']
+    ssh_host_timeout=configuration['ssh_host_timeout']
+    ssh_host_retries=configuration['ssh_host_retries']
 
-sites=cluster_config['sites']
+    sites=cluster_config['sites']
 
-sitelist=[]
+    sitelist=[]
 
-for site in cluster_config['sites']:
+    for site in cluster_config['sites']:
 
-    clusterlist=[]
+        clusterlist=[]
 
-    for cluster in site['clusters']:
+        for cluster in site['clusters']:
 
-        nodelist=[]
+            nodelist=[]
 
-        for node in cluster['nodes']:
-            nodelist.append(Node(
-                node_name=node['nodename'],
-                node_ipaddress=node['ipaddress'],
-                node_fqdn=node['fqdn']
+            for node in cluster['nodes']:
+                nodelist.append(Node(
+                    node_name=node['nodename'],
+                    node_ipaddress=node['ipaddress'],
+                    node_fqdn=node['fqdn']
+                ))
+
+            clusterlist.append(Cluster(
+                cluster_name=cluster['clustername'],
+                administrator=cluster['administrator'],
+                ssh_keyfile=cluster['ssh_keyfile'],
+                ssh_user=cluster['ssh_user'],
+                ssh_passwdfile=cluster['ssh_passwdfile'],
+                ssh_port=cluster['ssh_port'],
+                nodes=nodelist
             ))
 
-        clusterlist.append(CIB(
-            cluster_name=cluster['clustername'],
-            administrator=cluster['administrator'],
-            ssh_keyfile=cluster['ssh_keyfile'],
-            ssh_user=cluster['ssh_user'],
-            ssh_passwdfile=cluster['ssh_passwdfile'],
-            ssh_port=cluster['ssh_port'],
-            nodes=nodelist
+        sitelist.append(Site(
+            sitename=site['sitename'],
+            clusters=clusterlist
         ))
 
-    sitelist.append(Site(
-        sitename=site['sitename'],
-        clusters=clusterlist
-    ))
+    for site in sitelist:
+        for cluster in site.clusters:
+            cluster.update_cib()
 
-for site in sitelist:
-    for cluster in site.clusters:
-        cluster.update_cib()
+            cluster.update_crm()
+
+            # if the cluster is deemed unreachable, the cib and arm will be empty.
+            if cluster.cluster_status != "Unreachable":
+                print (cluster.cluster_name)
+                for cib_resource in (cluster.cib['cib']['configuration']['resources'].items()):
+                    if cib_resource[0]=="primitive":
+                        print (cib_resource[1])
+
+
+
+
+                # print (primitive)
+                # print (primitive['@id'])
+                # print (primitive['@class'])
+                # print (primitive['@provider'])
+                print ('hello')
+
+
+
+
+
+    return sitelist
+
+log_output("Starting clusterview")
+sitelist=load_config(configfile)
+
+
+
+
+
+print ("hello world")

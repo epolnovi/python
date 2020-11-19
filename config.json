@@ -12,7 +12,7 @@
         {
           "clustername": "testcluster",
           "administrator": "root@testcluster",
-          "ssh_keyfile": "",
+          "ssh_keyfile": "privatekey",
           "ssh_user": "root",
           "ssh_passwdfile": "",
           "ssh_port": "21",
@@ -32,7 +32,7 @@
         {
           "clustername": "prodcluster",
           "administrator": "root@prodcluster",
-          "ssh_keyfile": "",
+          "ssh_keyfile": "privatekey",
           "ssh_user": "",
           "ssh_passwdfile": "",
           "ssh_port": "21",
