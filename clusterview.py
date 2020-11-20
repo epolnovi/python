@@ -19,19 +19,22 @@ class Primitive:
 
 
 class Resource:
-    def __init__(self,resource_name, resource_agent, resource_status="", resource_location=""):
+    def __init__(self,resource_name, resource_class, resource_type, resource_group="", resource_status="", resource_location=""):
         self.resource_name=resource_name
-        self.resource_agent=resource_agent
-        self.resource_location=resource_location
+        self.resource_class=resource_class
+        self.resource_type=resource_type
+        self.resource_group=resource_group
         self.resource_status=resource_status
+        self.resource_location = resource_location
 
-    pass
 
 class Fence_device:
     pass
 
 class Resourcegroup:
-    pass
+    def __init__(self,resource_group_name,resource_group_resources=""):
+        self.resource_group_name=resource_group_name
+        self.resource_group_name=resource_group_resources
 
 class Site:
 
@@ -62,6 +65,7 @@ class Cluster:
                  ssh_passwdfile,
                  ssh_port,
                  designated_coordinator="unknown",
+                 cluster_resources="",
                  nodes="",
                  cibxml="",
                  cib="",
@@ -75,6 +79,7 @@ class Cluster:
         self.ssh_user=ssh_user
         self.ssh_passwdfile=ssh_passwdfile
         self.ssh_port=ssh_port
+        self.cluster_resources=cluster_resources
         self.nodes=nodes
         self.cibxml=cibxml
         self.cib=cib
@@ -310,24 +315,55 @@ def load_config(configfile):
 
     for site in sitelist:
         for cluster in site.clusters:
-            cluster.update_cib()
 
-            cluster.update_crm()
+            # Update objects with data from CIB first
+
+            cluster.update_cib()
 
             # if the cluster is deemed unreachable, the cib and arm will be empty.
             if cluster.cluster_status != "Unreachable":
-                print (cluster.cluster_name)
-                for cib_resource in (cluster.cib['cib']['configuration']['resources'].items()):
-                    if cib_resource[0]=="primitive":
-                        print (cib_resource[1])
+                resource_list = []
+                # print (cluster.cluster_name)
+                for cib_resource_section in (cluster.cib['cib']['configuration']['resources'].items()):
+
+# section can be primitive, or be group. Groups consist of primitives. Iterate twice.
+
+                    if cib_resource_section[0]=="primitive":
+                        # print (cib_resource_section[1])
+
+                        for primitive in cib_resource_section[1]:
+                            # print (primitive)
+                            # print (primitive['@class'])
+
+                            resource_list.append(Resource(
+                                resource_name=primitive['@id'],
+                                resource_class=primitive['@class'],
+                                resource_type=primitive['@type']
+                            ))
 
 
+                    elif cib_resource_section[0]=="group":
+                        group_list=[]
+                        for primitive_group in cib_resource_section[1]:
+                            print (primitive_group)
+                            group_name=primitive_group['@id']
+
+                            for primitive in primitive_group['primitive']:
+                                print (primitive)
+                                print (primitive['@class'])
+
+                                resource_list.append(Resource(
+                                    resource_name=primitive['@id'],
+                                    resource_class=primitive['@class'],
+                                    resource_type=primitive['@type'],
+                                    resource_group=group_name
+                                ))
+
+                cluster.cluster_resources = resource_list
+
+            cluster.update_crm()
 
 
-                # print (primitive)
-                # print (primitive['@id'])
-                # print (primitive['@class'])
-                # print (primitive['@provider'])
                 print ('hello')
 
 
