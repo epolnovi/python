@@ -19,11 +19,12 @@ class Primitive:
 
 
 class Resource:
-    def __init__(self,resource_name, resource_class, resource_type, resource_group="", resource_status="", resource_location=""):
+    def __init__(self,resource_name, resource_class, resource_type, resource_agent="", resource_group="", resource_status="", resource_location=""):
         self.resource_name=resource_name
         self.resource_class=resource_class
         self.resource_type=resource_type
         self.resource_group=resource_group
+        self.resource_agent=resource_agent
         self.resource_status=resource_status
         self.resource_location = resource_location
 
@@ -319,7 +320,7 @@ def load_config(configfile):
             # Update objects with data from CIB first
 
             cluster.update_cib()
-
+            cluster.update_crm()
             # if the cluster is deemed unreachable, the cib and arm will be empty.
             if cluster.cluster_status != "Unreachable":
                 resource_list = []
@@ -345,12 +346,12 @@ def load_config(configfile):
                     elif cib_resource_section[0]=="group":
                         group_list=[]
                         for primitive_group in cib_resource_section[1]:
-                            print (primitive_group)
+                            # print (primitive_group)
                             group_name=primitive_group['@id']
 
                             for primitive in primitive_group['primitive']:
-                                print (primitive)
-                                print (primitive['@class'])
+                                # print (primitive)
+                                # print (primitive['@class'])
 
                                 resource_list.append(Resource(
                                     resource_name=primitive['@id'],
@@ -359,12 +360,45 @@ def load_config(configfile):
                                     resource_group=group_name
                                 ))
 
-                cluster.cluster_resources = resource_list
+                for crm_resource_section in (cluster.crm['pacemaker-result']['resources'].items()):
+# in crm_mon output, primitives are called resources
+                    if crm_resource_section[0]=="resource":
+                        for primitive in crm_resource_section[1]:
+                            resource_name=primitive['@id']
+                            resource_agent=primitive['@resource_agent']
+                            resource_location=primitive['node']['@name']
 
-            cluster.update_crm()
+# iterate through existing resource_list and add the agent and running location if the name matches
+                            for resource in resource_list:
+                                if resource.resource_name==resource_name:
+                                    resource.resource_agent=resource_agent
+                                    resource.resource_location=resource_location
+
+                    elif crm_resource_section[0]=="group":
+                        group_list=[]
+                        for primitive_group in crm_resource_section[1]:
+# in crm_mon output, primitives are called resources
+                            for primitive in primitive_group['resource']:
+                                resource_name = primitive['@id']
+                                resource_agent = primitive['@resource_agent']
+                                resource_location = primitive['node']['@name']
+                                for resource in resource_list:
+                                    if resource.resource_name==resource_name:
+                                        resource.resource_agent=resource_agent
+                                        resource.resource_location=resource_location
 
 
-                print ('hello')
+
+
+
+
+            cluster.cluster_resources = resource_list
+
+
+
+
+
+            print ('hello')
 
 
 
