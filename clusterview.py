@@ -3,6 +3,7 @@ import json
 import sys
 import random
 import xmltodict
+
 from pssh.clients import SSHClient
 
 # json made with https://jsoneditoronline.org/
@@ -29,13 +30,10 @@ class Resource:
         self.resource_location = resource_location
 
 
-class Fence_device:
-    pass
-
-class Resourcegroup:
-    def __init__(self,resource_group_name,resource_group_resources=""):
-        self.resource_group_name=resource_group_name
-        self.resource_group_name=resource_group_resources
+# class Resourcegroup:
+#     def __init__(self,resource_group_name,resource_group_resources=""):
+#         self.resource_group_name=resource_group_name
+#         self.resource_group_name=resource_group_resources
 
 class Site:
 
@@ -279,6 +277,7 @@ def load_config(configfile):
     privatekey=configuration['global_private_key_file']
     ssh_host_timeout=configuration['ssh_host_timeout']
     ssh_host_retries=configuration['ssh_host_retries']
+    global_interval_timer=configuration['global_interval_timer']
 
     sites=cluster_config['sites']
 
@@ -406,11 +405,10 @@ def load_config(configfile):
 
     return sitelist
 
-log_output("Starting clusterview")
-sitelist=load_config(configfile)
-
-
-
+# log_output("Starting clusterview")
+# sitelist=load_config(configfile)
+#
+# pickle.dump( sitelist, open("sitelist.p", "wb"))
 
 
 print ("hello world")
