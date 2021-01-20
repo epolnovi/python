@@ -3,16 +3,14 @@ import json
 import sys
 import random
 import xmltodict
+import argparse
+import pickle
 
 from pssh.clients import SSHClient
 
 # json made with https://jsoneditoronline.org/
 
-configfile="config.json"
-logfile="clusterview.log"
-privatekey="id_rsa"  # declare variable now, but will be overwritten from config.json
-ssh_host_timeout=1
-ssh_host_retries=1
+
 
 class Primitive:
   #    def __init__(self, resource_agent):
@@ -329,11 +327,9 @@ def load_config(configfile):
 # section can be primitive, or be group. Groups consist of primitives. Iterate twice.
 
                     if cib_resource_section[0]=="primitive":
-                        # print (cib_resource_section[1])
 
                         for primitive in cib_resource_section[1]:
-                            # print (primitive)
-                            # print (primitive['@class'])
+
 
                             resource_list.append(Resource(
                                 resource_name=primitive['@id'],
@@ -343,15 +339,12 @@ def load_config(configfile):
 
 
                     elif cib_resource_section[0]=="group":
-                        group_list=[]
+
                         for primitive_group in cib_resource_section[1]:
-                            # print (primitive_group)
+
                             group_name=primitive_group['@id']
 
                             for primitive in primitive_group['primitive']:
-                                # print (primitive)
-                                # print (primitive['@class'])
-
                                 resource_list.append(Resource(
                                     resource_name=primitive['@id'],
                                     resource_class=primitive['@class'],
@@ -386,18 +379,13 @@ def load_config(configfile):
                                         resource.resource_agent=resource_agent
                                         resource.resource_location=resource_location
 
+    #        cluster.cluster_resources = resource_list
 
 
 
 
 
-            cluster.cluster_resources = resource_list
-
-
-
-
-
-            print ('hello')
+   #         print ('hello')
 
 
 
@@ -405,10 +393,56 @@ def load_config(configfile):
 
     return sitelist
 
-# log_output("Starting clusterview")
-# sitelist=load_config(configfile)
+# Main program starts here.
+# Parse the commandline
+
+
+configfile="config.json"
+logfile="clusterview.log"
+privatekey="id_rsa"  # declare variable now, but will be overwritten from config.json
+ssh_host_timeout=1
+ssh_host_retries=1
+
+
+parser = argparse.ArgumentParser(description='Clusterview - monitor pacemaker clusters')
+group = parser.add_mutually_exclusive_group()
+group.add_argument(
+    '--server',
+    metavar="configfile",
+    type=str,
+    action="store",
+    help='specify the configfile for server mode',
+    nargs=1
+)
+
+group.add_argument(
+    '--client',
+    metavar="configfile",
+    action="store",
+    help='specify the configfile for client mode',
+    nargs=1
+)
+
+args = parser.parse_args()
+
+if args.server is not None:
+    server_config_file=args.server[0]
+
+    sitelist=load_config(server_config_file)
+    pickle.dump(sitelist, open("sitelist.p", "wb"))
+
+
+    print ('hello worls')
+
+if args.client is not None:
+    print (args.client)
+    sitelist = pickle.load (open("sitelist.p","rb"))
+
+    print ("Hello world")
+
+#log_output("Starting clusterview")
+#sitelist=load_config(configfile)
 #
 # pickle.dump( sitelist, open("sitelist.p", "wb"))
 
 
-print ("hello world")
