@@ -33,7 +33,7 @@
           "clustername": "prodcluster",
           "administrator": "root@prodcluster",
           "ssh_keyfile": "privatekey",
-          "ssh_user": "",
+          "ssh_user": "root",
           "ssh_passwdfile": "",
           "ssh_port": "21",
           "nodes": [
@@ -58,7 +58,7 @@
           "clustername": "Azureprodcluster",
           "administrator": "root@prodcluster",
           "ssh_keyfile": "",
-          "ssh_user": "",
+          "ssh_user": "root",
           "ssh_passwdfile": "",
           "ssh_port": "21",
           "nodes": [
