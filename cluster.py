@@ -1,5 +1,6 @@
 import random
 import json
+import xmltodict
 
 from resource import Resource
 from cluster_logging import Logging
@@ -47,8 +48,7 @@ class PacemakerCluster:
 
         @designated_coordinator.setter
         def designated_coordinator(self, designated_coordinator_value):
-            Logging.log_output("Setting designated coordinator of cluster {} to {}".format(self.cluster_name,
-                                                                                   designated_coordinator_value))
+            Logging.log_output("Setting designated coordinator of cluster {} to {}".format(self.cluster_name, designated_coordinator_value))
             self.designated_coordinator = designated_coordinator_value
 
         @property
@@ -107,42 +107,54 @@ class PacemakerCluster:
             for dc_ip in self.nodes:
                 dc_node_list.append(dc_ip.node_ipaddress)
             self.designated_coordinator = random.choice(dc_node_list)
-            try:
-                Logging.log_output("Downloading CIB from {}".format(self.designated_coordinator))
-                ssh_client = SSHClient(self.designated_coordinator,
-                                       user=self.ssh_user,
-                                       pkey=self.ssh_keyfile,
-                                       timeout=1,
-                                       num_retries=1)
-                node_ssh_output = ssh_client.run_command('cat /var/lib/pacemaker/cib/cib.xml')
-                for line in node_ssh_output.stdout:
-                    self.cibxml = self.cibxml + line + '\n'
-                self.cluster_status = "Reachable"
-                self.cib = xmltodict.parse(self.cibxml)
-            except:
-                Logging.log_output("Can not download CIB.xml from " + self.designated_coordinator)
-                self.designated_coordinator = "unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
-                self.cluster_status = "Unreachable"  # Consider whole cluster offline until the next random host answers.
-                return
-        return self.cib
 
-    def update_crm(self):
         try:
+            Logging.log_output("Downloading CIB from {}".format(self.designated_coordinator))
             ssh_client = SSHClient(self.designated_coordinator,
                                    user=self.ssh_user,
                                    pkey=self.ssh_keyfile,
-                                   timeout=2,
-                                   num_retries=2)
-            node_ssh_output = ssh_client.run_command('crm_mon --output-as=xml')
+                                   timeout=1,
+                                   num_retries=1)
+            node_ssh_output = ssh_client.run_command('cat /var/lib/pacemaker/cib/cib.xml')
             for line in node_ssh_output.stdout:
-                self.crmxml = self.crmxml + line + '\n'
-            for line in node_ssh_output.stderr:
-                Logging.log_output(line)
-            self.crm = xmltodict.parse(self.crmxml)
+                self.cibxml = self.cibxml + line + '\n'
+            self.cluster_status = "Reachable"
+            self.cib = xmltodict.parse(self.cibxml)
         except Exception as e:
-            print(e)
+            Logging.log_output("Can not download Cluster Information Base from " + self.designated_coordinator)
+   #         self.designated_coordinator = "unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
+            self.cluster_status = "Unreachable"  # Consider whole cluster offline until the next random host answers.
             Logging.log_output(str(e))
+
             return e
+        return self.cib
+
+    def update_crm(self):
+
+        if (self.designated_coordinator == "unknown"):
+            dc_node_list = []
+            for dc_ip in self.nodes:
+                dc_node_list.append(dc_ip.node_ipaddress)
+            self.designated_coordinator = random.choice(dc_node_list)
+
+
+        if (self.cluster_status != "Unreachable"):
+            try:
+                ssh_client = SSHClient(self.designated_coordinator,
+                                       user=self.ssh_user,
+                                       pkey=self.ssh_keyfile,
+                                       timeout=2,
+                                       num_retries=2)
+                node_ssh_output = ssh_client.run_command('crm_mon --output-as=xml')
+                for line in node_ssh_output.stdout:
+                    self.crmxml = self.crmxml + line + '\n'
+                for line in node_ssh_output.stderr:
+                    Logging.log_output(line)
+                self.crm = xmltodict.parse(self.crmxml)
+            except Exception as e:
+                Logging.log_output("Can not download Cluster Resource Management state from " + self.designated_coordinator)
+                Logging.log_output(str(e))
+                return e
         return self.crm
 
     def update_nodes(self, node_name, node_online_status, node_resources, node_id):

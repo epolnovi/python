@@ -7,6 +7,9 @@ import sys
 from cluster import PacemakerCluster
 from resource import Resource
 from cluster_logging import Logging
+from threading import Thread
+
+import socket
 
 
 # json made with https://jsoneditoronline.org/
@@ -39,6 +42,8 @@ logfile = "clusterview.log"
 privatekey = "id_rsa"  # declare variable now, but will be overwritten from config.json
 ssh_host_timeout = 1
 ssh_host_retries = 1
+server_host = ''
+tcp_port=59999
 
 
 Logging.set_logging(logfile,use_logfile=True, verbose_to_terminal=False)
@@ -50,25 +55,56 @@ group.add_argument(
     metavar="configfile",
     type=str,
     action="store",
-    help='specify the configfile for server mode',
+    help="specify the configfile for server mode",
     nargs=1
 )
 
 group.add_argument(
     '--client',
-    metavar="configfile",
+    metavar="HOST",
     action="store",
-    help='specify the configfile for client mode',
+    help='specify the server to connect to',
     nargs=1
 )
 
+parser.add_argument(
+    '--port',
+    action="store",
+    help="specify tcp port number for server or client (default: 59999)."
+)
+
+
 args = parser.parse_args()
+
+# Main server loop
 
 if args.server is not None:
     server_config_file = args.server[0]
 
     sitelist = PacemakerCluster.load_config(server_config_file)
     pickle.dump(sitelist, open("sitelist.p", "wb"))
+    data=pickle.dumps(sitelist)
+
+
+    s = socket.socket()  # open a socket
+    s.bind(('', tcp_port))  # bind to a host and port
+    s.listen(5)  # start listening
+
+
+    def handle_connection(conn):
+        while True:  # loop to recv data
+            conn.sendall(data)  # send data back
+        print("Connection closed: " + str(addr))
+        conn.close()  # close connection
+
+
+    while True:  # loop for connections ( each in a parallel thread )
+        conn, addr = s.accept()  # block and wait for incoming connections
+        print("Connection from " + str(addr))
+        t = Thread(target=handle_connection, args=(conn,))  # create a new thread
+        t.start()  # start it
+
+    s.close()
 
     print('hello worls')
 
