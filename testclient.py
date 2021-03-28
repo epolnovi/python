@@ -12,7 +12,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))         # connect to the server
 
 
-    data = s.recv(1024)      # recv data
+    data = s.recv(16384)      # recv data
 
     print('From server: ' + repr(data))
     time.sleep(5)

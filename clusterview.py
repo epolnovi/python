@@ -1,3 +1,5 @@
+# encoding= utf-8
+
 import argparse
 import datetime
 
@@ -15,8 +17,8 @@ import socket
 # json made with https://jsoneditoronline.org/
 
 
-class Primitive:
-    pass
+#class Primitive:
+#    pass
 
 # Function to log messages to a logfile
 
@@ -42,11 +44,31 @@ logfile = "clusterview.log"
 privatekey = "id_rsa"  # declare variable now, but will be overwritten from config.json
 ssh_host_timeout = 1
 ssh_host_retries = 1
-server_host = ''
+foreign_address=''
 tcp_port=59999
 
 
 Logging.set_logging(logfile,use_logfile=True, verbose_to_terminal=False)
+
+
+def clusterview_server(conn):
+#    while True:  # loop
+    with open('sites.p','rb') as pickle_file:
+        data=pickle_file.read()
+    pickle_data=pickle.dumps(data)
+    conn.sendall(pickle_data)
+    conn.close
+
+        # sitelist=pickle.load( open("sites.p", "rb" ))
+        # pickle_data=pickle.dumps(sitelist)
+        # conn.sendall(pickle_data)  # send data
+        # print("Connection closed: " + str(addr))
+        # conn.close()  # close connection
+
+def clusterview_update_data(configfile):
+    while True:
+        sitelist=PacemakerCluster.load_config(configfile)
+        pickle.dump(sitelist, open("sites.p", "wb"))
 
 parser = argparse.ArgumentParser(description='Clusterview - monitor pacemaker clusters')
 group = parser.add_mutually_exclusive_group()
@@ -81,36 +103,30 @@ args = parser.parse_args()
 if args.server is not None:
     server_config_file = args.server[0]
 
-    sitelist = PacemakerCluster.load_config(server_config_file)
-    pickle.dump(sitelist, open("sitelist.p", "wb"))
-    data=pickle.dumps(sitelist)
+# Start collecting data in a seperate thread
 
+    load_config_thread = Thread(target=clusterview_update_data, args=(server_config_file,), daemon=True)
+    load_config_thread.start()
 
-    s = socket.socket()  # open a socket
-    s.bind(('', tcp_port))  # bind to a host and port
-    s.listen(5)  # start listening
+    server_socket = socket.socket()  # open a socket
+    server_socket.bind((foreign_address, tcp_port))  # bind to a host and port
+    server_socket.listen(5)  # start listening
 
-
-    def handle_connection(conn):
-        while True:  # loop to recv data
-            conn.sendall(data)  # send data back
-        print("Connection closed: " + str(addr))
-        conn.close()  # close connection
 
 
     while True:  # loop for connections ( each in a parallel thread )
-        conn, addr = s.accept()  # block and wait for incoming connections
+        conn, addr = server_socket.accept()  # block and wait for incoming connections
         print("Connection from " + str(addr))
-        t = Thread(target=handle_connection, args=(conn,))  # create a new thread
-        t.start()  # start it
+        server_thread = Thread(target=clusterview_server, args=(conn,))  # create a new thread
+        server_thread.start()  # start it
 
-    s.close()
+    server_socket.close()
 
-    print('hello worls')
+print('hello worls')
 
 if args.client is not None:
     print(args.client)
-    sitelist = pickle.load(open("sitelist.p", "rb"))
+    sitelist = pickle.load(open("sites.p", "rb"))
 
     print("Hello world")
 
