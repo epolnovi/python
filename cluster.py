@@ -284,12 +284,7 @@ class PacemakerCluster:
                                             resource.resource_agent = resource_agent
                                             resource.resource_location = resource_location
 
-        #        cluster.cluster_resources = resource_list
-        #         print ('hello')
-
         return sitelist
-
-
 
 class Site:
 

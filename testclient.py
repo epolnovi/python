@@ -8,14 +8,28 @@ import socket
 HOST = '127.0.0.1'  # connect to the local host
 PORT = 59999        # connect to this port
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))         # connect to the server
+import pickle
+
+HEADERSIZE = 10
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+
+while True:
+    full_msg = b''
+    new_msg = True
+    while True:
+        msg = s.recv(1024)
+        if new_msg:
+            print("new msg len:",msg[:HEADERSIZE])
+            msglen = int(msg[:HEADERSIZE])
+            print(msglen)
+            new_msg = False
+
+        print(f"full message length: {msglen}")
+
+        full_msg = s.recv(msglen)
+
+        print (len(full_msg))
 
 
-    data = s.recv(16384)      # recv data
-
-    print('From server: ' + repr(data))
-    time.sleep(5)
-    ## could continue communication
-    ## OR
-    ## look for a delimiter
