@@ -1,6 +1,7 @@
 import random
 import json
 import xmltodict
+import sys
 
 from resource import Resource
 from cluster_logging import Logging
@@ -38,9 +39,12 @@ class PacemakerCluster:
         self.crm = crm
         self.cluster_status = cluster_status
 
+    def __str__(self):
+        return self.cluster_name
+
         @property
         def cluster_name(self):
-            return self.__cluster_name
+            return self._cluster_name
 
         @property
         def designated_coordinator(self):
@@ -122,7 +126,7 @@ class PacemakerCluster:
             self.cib = xmltodict.parse(self.cibxml)
         except Exception as e:
             Logging.log_output("Can not download Cluster Information Base from " + self.designated_coordinator)
-   #         self.designated_coordinator = "unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
+            # self.designated_coordinator = "unknown"  # if it fails, set it to ynknown, hopefully next random pick will be more succesful
             self.cluster_status = "Unreachable"  # Consider whole cluster offline until the next random host answers.
             Logging.log_output(str(e))
 
@@ -136,7 +140,6 @@ class PacemakerCluster:
             for dc_ip in self.nodes:
                 dc_node_list.append(dc_ip.node_ipaddress)
             self.designated_coordinator = random.choice(dc_node_list)
-
 
         if (self.cluster_status != "Unreachable"):
             try:
@@ -228,6 +231,7 @@ class PacemakerCluster:
                 # if the cluster is deemed unreachable, the cib and arm will be empty.
                 if cluster.cluster_status != "Unreachable":
                     resource_list = []
+                    cluster.cluster_resources = []
                     # print (cluster.cluster_name)
                     for cib_resource_section in (cluster.cib['cib']['configuration']['resources'].items()):
 
@@ -237,9 +241,18 @@ class PacemakerCluster:
 
                             for primitive in cib_resource_section[1]:
                                 resource_list.append(Resource(
-                                    resource_name=primitive['@id'],
-                                    resource_class=primitive['@class'],
-                                    resource_type=primitive['@type']
+                                    resource_name = primitive['@id'],
+                                    resource_class = primitive['@class'],
+                                    resource_type = primitive['@type'],
+                                    resource_group = ''
+                                ))
+
+                                cluster.cluster_resources.append(Resource(
+                                    resource_name = primitive['@id'],
+                                    resource_class = primitive['@class'],
+                                    resource_type = primitive['@type'],
+                                    resource_group = ''
+
                                 ))
 
 
@@ -251,11 +264,19 @@ class PacemakerCluster:
 
                                 for primitive in primitive_group['primitive']:
                                     resource_list.append(Resource(
-                                        resource_name=primitive['@id'],
-                                        resource_class=primitive['@class'],
-                                        resource_type=primitive['@type'],
-                                        resource_group=group_name
+                                        resource_name = primitive['@id'],
+                                        resource_class = primitive['@class'],
+                                        resource_type = primitive['@type'],
+                                        resource_group = group_name
                                     ))
+
+                                    cluster.cluster_resources.append(Resource(
+                                        resource_name = primitive['@id'],
+                                        resource_class = primitive['@class'],
+                                        resource_type = primitive['@type'],
+                                        resource_group = group_name
+
+                                ))
 
                     for crm_resource_section in (cluster.crm['pacemaker-result']['resources'].items()):
                         # in crm_mon output, primitives are called resources
@@ -270,6 +291,8 @@ class PacemakerCluster:
                                     if resource.resource_name == resource_name:
                                         resource.resource_agent = resource_agent
                                         resource.resource_location = resource_location
+                                        
+
 
                         elif crm_resource_section[0] == "group":
                             group_list = []
@@ -284,7 +307,10 @@ class PacemakerCluster:
                                             resource.resource_agent = resource_agent
                                             resource.resource_location = resource_location
 
+
         return sitelist
+
+
 
 class Site:
 
@@ -310,14 +336,17 @@ class Node:
                  node_name,
                  node_ipaddress,
                  node_fqdn,
-                 node_online_status="unknown",
-                 node_resources="",
-                 node_id=""):
+                 node_online_status = "unknown",
+                 node_resources = "",
+                 node_id = ""):
         self.node_name = node_name
         self.node_ipaddress = node_ipaddress
         self.node_fqdn = node_fqdn
         self.node_online_status = node_online_status
         self.node_resources = node_resources
+
+    def __str__(self):
+        return self.node_name
 
         @property
         def node_name(self):
